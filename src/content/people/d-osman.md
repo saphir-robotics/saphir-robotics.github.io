@@ -3,7 +3,7 @@ name: "Dalia Osman"
 status: current
 group: Researchers
 role: "Postdoctoral Research Associate"
-headshot: ../../assets/people/d-osman.png
+headshot: ../../assets/people/d-osman.jpg
 links:
   scholar: "https://scholar.google.com/citations?user=X2B2qfsAAAAJ&hl=en&inst=7421307413561760588"
 order: 7

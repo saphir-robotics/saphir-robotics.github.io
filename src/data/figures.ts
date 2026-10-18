@@ -43,6 +43,13 @@ export const FIGURES: SiteFigure[] = [
     ...CC_BY,
   },
   {
+    image: "sheikhsofla-2026-tool-channel-eversion.jpg",
+    area: "soft-robotics",
+    caption: "An eversion robot that carries a tool: the tool (red) travels inside the robot body to the tip, and its tether runs back out through the base mechanism. A ring frame around the body holds its shape.",
+    paper: { title: "Tool-carrying eversion robot (work in progress)", authors: "Sheikhsofla M, et al., Althoefer K", venue: "Unpublished", year: 2026 },
+    ...AUTHORS,
+  },
+  {
     image: "suulker-2026-colon-eversion.jpg",
     source: "https://arxiv.org/html/2601.12523v1/Figures/Fig1V3.jpg",
     area: "soft-robotics",
