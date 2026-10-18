@@ -4,6 +4,65 @@ import BaseLayout from "../components/BaseLayout.astro";
 import PageHeader from "../components/PageHeader.astro";
 import PubList from "../components/PubList.astro";
 import ResearchConsole from "../components/ResearchConsole.astro";
+import ResearchProject from "../components/ResearchProject.astro";
+import etPoster from "../assets/projects/endotheranostics-poster.jpg";
+
+// Funded projects, shown under the direction they belong to.
+const PROJECTS = {
+  soft: {
+    name: "EndoTheranostics",
+    tagline: "A soft everting robot for colorectal cancer screening and treatment",
+    url: "https://www.endotheranostics.com/project-endotheranostics/",
+    summary: [
+      "A perceptive soft robot with a sleeve-like body grows deep into the colon and becomes a channel for miniaturised diagnostic and therapeutic instruments.",
+      "It is designed to cleanse the colon painlessly before inspection, find polyps and characterise tissue in real time with AI-assisted multimodal imaging, and remove polyps inside a miniature mobile operating chamber with microsurgical tools.",
+      "Our group develops the soft everting robot at the heart of the system.",
+    ],
+    facts: [
+      { label: "Funding", value: "ERC Synergy Grant, €10m" },
+      { label: "Target", value: "Colorectal cancer" },
+      { label: "Principal investigators", value: "K. Althoefer (QMUL), A. Arezzo (Turin), B. Siciliano (Naples Federico II), S. Ourselin (KCL)" },
+      { label: "Note", value: "The first ERC Synergy Grant awarded at Queen Mary" },
+    ],
+    video: "projects/endotheranostics.mp4",
+    chapters: [
+      { t: 8, label: "Rinse", text: "The everting robot grows through the colon and cleanses it ahead of inspection." },
+      { t: 32, label: "Detect", text: "A robotic capsule travels along the robot, finds suspected polyps and holds one with negative pressure." },
+      { t: 64, label: "Characterise", text: "Multimodal sensing at the tip: optical ultrasound and photoacoustic endomicroscopy." },
+      { t: 92, label: "Remove", text: "Micro-manipulators at the tip remove the cancerous tissue." },
+    ],
+    poster: etPoster,
+    team: ["k-althoefer", "n-dei", "c-suulker", "r-kashef", "m-sheikhsofla", "q-cong", "y-jia"],
+    sources: [
+      { label: "QMUL news, Oct 2023", url: "https://www.sems.qmul.ac.uk/news/6572/research-group-wins-10m-grant-to-develop-revolutionary-cancer-treatment-robot/" },
+      { label: "endotheranostics.com", url: "https://www.endotheranostics.com/project-endotheranostics/" },
+    ],
+  },
+  tactile: {
+    name: "PALPABLE",
+    tagline: "Bringing the sense of touch back to minimally invasive surgery",
+    url: "https://palpable-project.eu/project/#solution",
+    summary: [
+      "In open surgery a surgeon can feel tissue with their fingers; in keyhole surgery that sense of palpation is lost, and today's surgical systems cannot give it back.",
+      "PALPABLE is building a finger-like palpation tool that feels tissue stiffness and shows it to the surgeon, to help tell healthy tissue from tumour during minimally invasive surgery.",
+    ],
+    facts: [
+      { label: "Funding", value: "EU Horizon Europe, grant no. 101092518" },
+      { label: "Duration", value: "48 months, from January 2023" },
+      { label: "Consortium", value: "10 partners from 7 European countries, coordinated by Tech Hive Labs" },
+      { label: "Our part", value: "Soft robot and sensor fabrication, prototyping and testing" },
+    ],
+    parts: [
+      { title: "Soft pneumatic tip", text: "A thin, pneumatically actuated end-effector with proprioceptive sensing, for more freedom of motion and accurate positioning." },
+      { title: "Distributed tactile probe", text: "A tactile sensing array that presses on tissue to tell healthy from cancerous tissue." },
+      { title: "Photonic read-out", text: "A non-planar photonics circuit that interrogates the tactile sensor array." },
+      { title: "Distance sensing", text: "A distance-sensing module that gives a visual map of the organ being examined." },
+      { title: "Stiffness reconstruction", text: "Software that rebuilds the tissue's stiffness profile and presents it to the surgeon." },
+    ],
+    team: ["k-althoefer", "d-osman", "a-dawood", "j-chen", "a-majumder", "q-cong"],
+    sources: [{ label: "palpable-project.eu", url: "https://palpable-project.eu/project/" }],
+  },
+} as const;
 import { getResearchGroups, getPublications } from "../lib/content";
 
 // The three research directions (same as the homepage, with more detail).
@@ -67,7 +126,8 @@ const total = (await getPublications()).length;
   <div class="container-page py-20">
     <div class="space-y-24">
       {directions.map((d, i) => (
-        <section class="dir grid items-center gap-10 lg:grid-cols-2 lg:gap-16" id={d.plate}>
+        <section id={d.plate} class="scroll-mt-24">
+        <div class="dir grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <div class:list={[i % 2 === 1 && "lg:order-2"]}>
             <ResearchConsole kind={d.plate} index={i + 1} tag={d.tag} keys={d.keys} card={d.card} />
           </div>
@@ -81,6 +141,8 @@ const total = (await getPublications()).length;
               {d.keys.map((k) => <li class="label-mono border border-slate-300 px-2.5 py-1.5 text-slate-600">{k}</li>)}
             </ul>
           </div>
+        </div>
+          {d.plate in PROJECTS && <ResearchProject {...PROJECTS[d.plate as keyof typeof PROJECTS]} />}
         </section>
       ))}
     </div>

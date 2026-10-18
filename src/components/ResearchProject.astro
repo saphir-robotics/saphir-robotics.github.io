@@ -1,0 +1,440 @@
+---
+/*
+  ResearchProject — a funded project shown under its research direction on the
+  Research page: a dark panel with the key facts, what the project builds, the
+  group members working on it, and either a video or a numbered list of parts.
+*/
+import type { ImageMetadata } from "astro";
+import { Image } from "astro:assets";
+import { getEntry } from "astro:content";
+import { withBase } from "../lib/urls";
+
+interface Props {
+  name: string;
+  tagline: string;
+  url: string;
+  facts: { label: string; value: string }[];
+  summary: string[];
+  /** numbered parts of the system (shown when there is no video) */
+  parts?: { title: string; text: string }[];
+  /** path under public/ */
+  video?: string;
+  /** chapters of the video: start time (s), label, one line */
+  chapters?: { t: number; label: string; text: string }[];
+  poster?: ImageMetadata;
+  /** people slugs */
+  team?: string[];
+  sources?: { label: string; url: string }[];
+}
+const { name, tagline, url, facts, summary, parts = [], video, chapters = [], poster, team = [], sources = [] } = Astro.props;
+const people = (await Promise.all(team.map((s) => getEntry("people", s)))).filter(Boolean);
+---
+
+<article class="proj">
+  <header class="proj-head">
+    <span class="proj-kicker">Project</span>
+    <span class="proj-rule" aria-hidden="true"></span>
+    <a href={url} target="_blank" rel="noopener noreferrer" class="proj-site" data-sfx="tick">Project website ↗</a>
+  </header>
+
+  <div class:list={["proj-body", video ? "has-video" : "has-parts"]}>
+    <div class="proj-text">
+      <h3 class="proj-name">{name}</h3>
+      <p class="proj-tag">{tagline}</p>
+      <div class="proj-summary">
+        {summary.map((p) => <p>{p}</p>)}
+      </div>
+      <dl class="proj-facts">
+        {facts.map((f) => (
+          <div>
+            <dt>{f.label}</dt>
+            <dd>{f.value}</dd>
+          </div>
+        ))}
+      </dl>
+      {people.length > 0 && (
+        <div class="proj-team">
+          <p class="proj-lab">In our group</p>
+          <ul>
+            {people.map((p) => (
+              <li>
+                <a href={withBase(`/people/${p!.id}`)} data-sfx="tick">
+                  {p!.data.headshot && <Image src={p!.data.headshot} alt="" width={64} height={64} class="h-7 w-7 object-cover" />}
+                  <span>{p!.data.name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+
+    {video ? (
+      <figure class="proj-media">
+        <div class="proj-video-frame">
+          <video
+            class="proj-video"
+            src={withBase(`/${video}`)}
+            poster={poster?.src}
+            muted
+            loop
+            playsinline
+            controls
+            preload="none"
+            aria-label={`${name}: concept animation`}
+          ></video>
+        </div>
+        <figcaption class="proj-cap">Concept animation of the {name} system. Video: {name} consortium.</figcaption>
+        {chapters.length > 0 && (
+          <ol class="proj-chapters">
+            {chapters.map((c, i) => (
+              <li>
+                <button type="button" data-seek={c.t} data-sfx="tick">
+                  <span class="ch-no">{String(i + 1).padStart(2, "0")}</span>
+                  <span class="ch-label">{c.label}</span>
+                  <span class="ch-time">{`${Math.floor(c.t / 60)}:${String(c.t % 60).padStart(2, "0")}`}</span>
+                  <span class="ch-text">{c.text}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
+      </figure>
+    ) : (
+      <ol class="proj-parts">
+        {parts.map((p, i) => (
+          <li>
+            <span class="pp-no">{String(i + 1).padStart(2, "0")}</span>
+            <div>
+              <p class="pp-title">{p.title}</p>
+              <p class="pp-text">{p.text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    )}
+  </div>
+
+  {sources.length > 0 && (
+    <footer class="proj-src">
+      Sources:{" "}
+      {sources.map((s, i) => (
+        <>
+          {i > 0 && " · "}
+          <a href={s.url} target="_blank" rel="noopener noreferrer">{s.label}</a>
+        </>
+      ))}
+    </footer>
+  )}
+</article>
+
+<script>
+  // Play the concept video (muted) while it is on screen; respect reduced motion.
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelectorAll<HTMLVideoElement>(".proj-video").forEach((v) => {
+    // chapter buttons: jump to a stage of the animation; the current stage is highlighted
+    const fig = v.closest(".proj-media");
+    const btns = [...(fig?.querySelectorAll<HTMLButtonElement>("[data-seek]") ?? [])];
+    btns.forEach((b) =>
+      b.addEventListener("click", () => {
+        v.preload = "auto";
+        v.currentTime = Number(b.dataset.seek);
+        v.play().catch(() => {});
+      }),
+    );
+    const mark = () => {
+      let k = -1;
+      btns.forEach((b, i) => {
+        if (v.currentTime >= Number(b.dataset.seek) - 0.25) k = i;
+      });
+      btns.forEach((b, i) => b.classList.toggle("is-now", i === k));
+    };
+    v.addEventListener("timeupdate", mark);
+    v.addEventListener("seeked", mark);
+    if (reduce) return;
+    new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          if (v.preload === "none") v.preload = "auto";
+          v.play().catch(() => {});
+        } else v.pause();
+      },
+      { threshold: 0.4 },
+    ).observe(v);
+  });
+</script>
+
+<style>
+  .proj {
+    --c-line: #2b2b2b;
+    --c-dim: #8a8a86;
+    --c-or: #df6335;
+    margin-top: 3rem;
+    background: #0b0b0b;
+    border: 1px solid var(--c-line);
+    color: #d4d4d4;
+  }
+  .proj-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    height: 2rem;
+    padding: 0 0.9rem;
+    border-bottom: 1px solid var(--c-line);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .proj-kicker {
+    color: var(--c-or);
+  }
+  .proj-rule {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--c-line), transparent);
+  }
+  .proj-site {
+    color: #fff;
+    transition: color 0.2s;
+  }
+  .proj-site:hover {
+    color: var(--c-or);
+  }
+  .proj-body {
+    display: grid;
+    gap: 2rem;
+    padding: 1.75rem 1.5rem 1.75rem;
+  }
+  @media (min-width: 1024px) {
+    .proj-body {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      gap: 2.5rem;
+      padding: 2rem 2rem 2rem;
+    }
+  }
+  .proj-name {
+    font-family: var(--font-serif);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.03em;
+    line-height: 0.95;
+    font-size: clamp(1.6rem, 2.8vw, 2.3rem);
+    color: #fff;
+    overflow-wrap: anywhere;
+  }
+  .proj-tag {
+    margin-top: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-or);
+  }
+  .proj-summary {
+    margin-top: 1.25rem;
+    display: grid;
+    gap: 0.75rem;
+    font-size: 0.98rem;
+    line-height: 1.65;
+    color: #c8c8c4;
+  }
+  .proj-facts {
+    margin-top: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid var(--c-line);
+  }
+  .proj-facts > div {
+    padding: 0.7rem 0.75rem 0.7rem 0;
+    border-bottom: 1px solid var(--c-line);
+  }
+  .proj-facts > div:nth-child(odd) {
+    border-right: 1px solid var(--c-line);
+  }
+  .proj-facts > div:nth-child(even) {
+    padding-left: 0.75rem;
+  }
+  .proj-facts dt,
+  .proj-lab {
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--c-dim);
+  }
+  .proj-facts dd {
+    margin-top: 0.3rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: #fff;
+  }
+  .proj-team {
+    margin-top: 1.25rem;
+  }
+  .proj-team ul {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .proj-team a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.2rem 0.6rem 0.2rem 0.2rem;
+    border: 1px solid #333;
+    font-size: 0.82rem;
+    color: #e5e5e5;
+    transition:
+      border-color 0.2s,
+      color 0.2s;
+  }
+  .proj-team a:hover {
+    border-color: var(--c-or);
+    color: var(--c-or);
+  }
+  .proj-media {
+    margin: 0;
+    align-self: start;
+  }
+  .proj-video-frame {
+    position: relative;
+    border: 1px solid #333;
+    background: #000;
+  }
+  .proj-video-frame::before,
+  .proj-video-frame::after {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    width: 14px;
+    height: 14px;
+    border: 0 solid var(--c-or);
+    pointer-events: none;
+  }
+  .proj-video-frame::before {
+    top: -1px;
+    left: -1px;
+    border-top-width: 2px;
+    border-left-width: 2px;
+  }
+  .proj-video-frame::after {
+    right: -1px;
+    bottom: -1px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+  }
+  .proj-video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+  }
+  .proj-cap {
+    margin-top: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--c-dim);
+  }
+  .proj-chapters {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .proj-chapters button {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: baseline;
+    column-gap: 0.5rem;
+    width: 100%;
+    height: 100%;
+    padding: 0.6rem 0.7rem;
+    text-align: left;
+    border: 1px solid #333;
+    transition:
+      border-color 0.2s,
+      background-color 0.2s;
+  }
+  .proj-chapters button:hover {
+    border-color: #777;
+  }
+  .proj-chapters button.is-now {
+    border-color: var(--c-or);
+    background: rgba(223, 99, 53, 0.1);
+  }
+  .ch-no {
+    font-family: var(--font-serif);
+    font-weight: 800;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--c-or);
+  }
+  .ch-label {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #fff;
+  }
+  .ch-time {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--c-dim);
+  }
+  .ch-text {
+    grid-column: 2 / -1;
+    margin-top: 0.3rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: #bdbdb9;
+  }
+  .proj-parts {
+    align-self: start;
+    border-top: 1px solid var(--c-line);
+  }
+  .proj-parts li {
+    display: grid;
+    grid-template-columns: 2.6rem 1fr;
+    gap: 0.75rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--c-line);
+    transition: background-color 0.2s;
+  }
+  .proj-parts li:hover {
+    background: rgba(223, 99, 53, 0.06);
+  }
+  .pp-no {
+    font-family: var(--font-serif);
+    font-weight: 800;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--c-or);
+  }
+  .pp-title {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #fff;
+  }
+  .pp-text {
+    margin-top: 0.35rem;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: #bdbdb9;
+  }
+  .proj-src {
+    padding: 0.7rem 0.9rem;
+    border-top: 1px solid var(--c-line);
+    font-size: 0.7rem;
+    color: var(--c-dim);
+  }
+  .proj-src a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .proj-src a:hover {
+    color: var(--c-or);
+  }
+</style>
