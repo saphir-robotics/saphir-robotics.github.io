@@ -54,8 +54,11 @@ export const FILTER_GROUPS: { title: string; slugs: AreaSlug[] }[] = [
 ];
 
 /** Research-page groups → each area with its most-recent pubs (capped) + total count. */
+/** Papers with the group lead as an author — what the Research page shows as the group's work. */
+export const withPI = (p: { data: { authors: string[] } }) => p.data.authors.some((a) => /Althoefer|Althöfer/i.test(a));
+
 export async function getResearchGroups(limit = 4) {
-  const pubs = await getPublications();
+  const pubs = (await getPublications()).filter(withPI);
   return RESEARCH_GROUPS.map((g) => ({
     title: g.title,
     areas: g.areas

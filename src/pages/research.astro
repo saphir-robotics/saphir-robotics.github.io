@@ -63,7 +63,7 @@ const PROJECTS = {
     sources: [{ label: "palpable-project.eu", url: "https://palpable-project.eu/project/" }],
   },
 } as const;
-import { getResearchGroups, getPublications } from "../lib/content";
+import { getResearchGroups, getPublications, withPI } from "../lib/content";
 
 // The three research directions (same as the homepage, with more detail).
 const directions = [
@@ -105,7 +105,7 @@ const directions = [
 // Data-driven: papers group by their `areas` tags. Each area shows its most
 // recent few with a link to the full, area-filtered Publications list.
 const groups = await getResearchGroups(4);
-const total = (await getPublications()).length;
+const total = (await getPublications()).filter(withPI).length;
 ---
 
 <BaseLayout
@@ -166,7 +166,7 @@ const total = (await getPublications()).length;
                     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                       <h4 class="font-serif text-xl text-slate-900">{area.label}</h4>
                       <a href={withBase(`/publications#${area.slug}`)} class="label-mono text-slate-500 transition-colors hover:text-accent-600" data-sfx="tick">
-                        All {area.total} &rarr;
+                        All papers &rarr;
                       </a>
                     </div>
                     <p class="mt-2 max-w-3xl text-slate-600">{area.blurb}</p>
